@@ -13,7 +13,7 @@ atom_modify map hash      # Needed for indexing of clusters etc
 # and fill it with atoms. Here we're creating a box which is ten lattice
 # constants in each direction.
 lattice fcc 0.6 spacing 1 1 1
-region box block 0 10 0 10 0 10 units lattice
+region box block 0 20 0 20 0 20 units lattice
 create_box 1 box
 create_atoms 1 box
 
@@ -58,20 +58,11 @@ velocity all create 1.4 41787 mom yes dist gaussian # Assign velocities
 compute stress all stress/atom NULL virial # Assuming not having KE contribuition
 
 
-# Compute the self-diffusivity
-# -----------------------------
-
-# Copied from LAMMPS documentation
-
-compute velac all vacf
-fix velfix all vector 1 c_velac[4]
-variable diff equal dt*trap(f_velfix)
-
-
 # Compute the viscosity
 # ----------------------
 
 #Copied from LAMMPS documentation. Missing some scale infomation
+reset_timestep 0
 
 variable pxy equal pxy
 variable pxz equal pxz
@@ -82,21 +73,6 @@ fix SS all ave/correlate 10 500 5000 v_pxy v_pxz v_pyz type auto ave running
 variable v11 equal trap(f_SS[3])
 variable v22 equal trap(f_SS[4])
 variable v33 equal trap(f_SS[5])
-
-# Compute thermal conductivity
-# ----------------------------
-
-# Again copied from documentation
-
-compute myEk all ke/atom
-compute myEp all pe/atom
-
-compute flux all heat/flux myEk myEp stress
-
-fix JJ all ave/correlate 10 500 5000 c_flux[1] c_flux[2] c_flux[3] type auto ave running 
-variable k11 equal trap(f_JJ[3])/vol
-variable k22 equal trap(f_JJ[4])/vol # Divide by volume - can remove
-variable k33 equal trap(f_JJ[5])/vol 
 
 # Thermo style which includes this variable
 thermo_style custom step temp press v_diff ke #pe vol v_max_n
@@ -114,9 +90,8 @@ dump dmdcd all dcd 500 traj.dcd
 run 1000000  # Run for this many steps
 
 variable vis equal (v_v11+v_v22+v_v33)/3.0
-variable cond equal (v_k11+v_k22+v_k33)/3.0
 
-print "Shear viscosity: ${vis}    Thermal conductivity: ${cond}    Diffusivity ${diff}"
+print "Shear viscosity: ${vis} "
 
 
 
